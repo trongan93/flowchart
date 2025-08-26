@@ -1,0 +1,20 @@
+%% ==========================
+%% Mini Overview with Constellation + Tasking & Windows
+%% ==========================
+flowchart LR
+classDef a fill:#E6F0FF,stroke:#2B6CB0,rx:10,ry:10,color:#1A365D,stroke-width:1.1px;
+classDef t fill:#FFEFF0,stroke:#9B2C2C,rx:10,ry:10,color:#63171B,stroke-width:1.1px;
+classDef b fill:#F3E8FF,stroke:#6B21A8,rx:10,ry:10,color:#3B0764,stroke-width:1.1px;
+classDef c fill:#E6FFFA,stroke:#0F766E,rx:10,ry:10,color:#134E4A,stroke-width:1.1px;
+classDef d fill:#E7F6E7,stroke:#2F855A,rx:10,ry:10,color:#1C4532,stroke-width:1.1px;
+classDef e fill:#F1F5F9,stroke:#334155,rx:10,ry:10,color:#0F172A,stroke-width:1.1px;
+
+S["🛰️ Constellation of Satellites<br/>(Optical • Thermal IR • SAR • GNSS-R • Other)"]:::a
+T["📅 Tasking & Windows<br/>(Orbit • Swath/Footprint • Daylight • Overlap)"]:::t
+E["🧪 AI Edge<br/>(Preprocessing + Compression)"]:::b
+I["🔗 ISLs (Mesh)<br/>(X/Ka/Laser)"]:::c
+F["🧠 On-Orbit Fusion<br/>(Align + Cross-Modal AI)"]:::d
+G["📡 Sat ⇄ Ground Links<br/>(S-band • X-band • L-band)"]:::e
+D["📤 End Users & Applications<br/>(Fused Products / Alerts)"]:::e
+
+S --> T --> E --> I --> F --> G --> D

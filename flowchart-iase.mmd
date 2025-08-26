@@ -1,0 +1,101 @@
+%% ==========================
+%% Detailed Flow (Bottom) – Constellation + ISL Mesh + Tasking
+%% ==========================
+flowchart LR
+
+ subgraph Sats["🛰️ On-Orbit Sensors<br/>(Constellation)"]
+        OPT["📷 Optical<br/>(VIS / NIR)"]
+        TIR["🌡️ Thermal IR<br/>(MWIR / LWIR)"]
+        SAR["📡 SAR<br/>(X-band)"]
+        GNSSR["📶 GNSS-R<br/>(Delay-Doppler)"]
+        OTH["🔭 Other Sensors<br/>(SWIR, Radiometer,<br/>AIS, Altimeter)"]
+  end
+
+ subgraph Task["📅 Tasking & Windows"]
+        ORB["Orbit Propagation<br/>(TLE / SGP4)"]
+        SWATH["Swath Geometry<br/>(Sensor Footprint: Optical, SAR, IR, GNSS-R, etc.)"]
+        DAY["Daylight Filter<br/>(Optical only)"]
+        OVL["Overlap Finder<br/>(ΔT windows: 1–12 h)"]
+  end
+
+ subgraph Prep["🧪 AI Edge Preprocessing"]
+        PREP["Calibration & QC<br/>+ Georeferencing<br/>+ AI Encoders → Features"]
+        ROI["ROI / Uncertainty Gating"]
+  end
+
+ subgraph Comp["🗜️ On-Orbit Compression"]
+        CODEC["AI Compression Codec"]
+        RATE["Rate Control & Tiling"]
+  end
+
+ subgraph ISL["🔗 Inter-Satellite Links<br/>(Mesh)"]
+        LINK["X-band / Ka-band / Laser<br/>+ Scheduling & QoS"]
+  end
+
+ subgraph Fuse["🧠 On-Orbit Fusion"]
+        DECODE["Decompression"]
+        ALIGN["Coarse + Fine Alignment<br/>(metadata + features)"]
+        FUSE["Cross-Modal Fusion<br/>(AI Attention / GNN)"]
+        PROD["Fused Product (ROI)<br/>• Clear Image<br/>• Multi-Sensor Map<br/>• Disaster Detection"]
+  end
+
+ subgraph Down["📤 Delivery & Ground"]
+        PRI["AOI Prioritization"]
+        GS["🛰️⇄📡 Sat–Ground Link<br/>(S-band, X-band, L-band)"]
+        DL["Downlink<br/>(Fused Products)"]
+        GFB["Ground Feedback<br/>(AI model updates,<br/>new AOIs)"]
+  end
+
+    %% Flow connections
+    OPT --> PREP
+    TIR --> PREP
+    SAR --> PREP
+    GNSSR --> PREP
+    OTH --> PREP
+
+    ORB --> SWATH --> DAY --> OVL --> LINK
+
+    PREP --> ROI
+    ROI --> CODEC
+    CODEC --> RATE
+    RATE --> LINK
+    LINK --> DECODE
+    DECODE --> ALIGN
+    ALIGN --> FUSE
+    FUSE --> PROD
+    PROD --> PRI
+    PRI --> GS
+    GS --> DL
+    DL --> GFB
+
+    %% Class styling
+    OPT:::sensors
+    TIR:::sensors
+    SAR:::sensors
+    GNSSR:::sensors
+    OTH:::sensors
+    ORB:::task
+    SWATH:::task
+    DAY:::task
+    OVL:::task
+    PREP:::prep
+    ROI:::prep
+    CODEC:::comp
+    RATE:::comp
+    LINK:::isl
+    DECODE:::fuse
+    ALIGN:::fuse
+    FUSE:::fuse
+    PROD:::fuse
+    PRI:::down
+    GS:::down
+    DL:::down
+    GFB:::down
+
+    classDef sensors fill:#E6F0FF,stroke:#2B6CB0,color:#1A365D,stroke-width:1.2px,rx:10,ry:10
+    classDef task    fill:#FFEFF0,stroke:#9B2C2C,color:#63171B,stroke-width:1.2px,rx:10,ry:10
+    classDef prep    fill:#F3E8FF,stroke:#6B21A8,color:#3B0764,stroke-width:1.2px,rx:10,ry:10
+    classDef comp    fill:#FFF4E5,stroke:#B45309,color:#7C2D12,stroke-width:1.2px,rx:10,ry:10
+    classDef isl     fill:#E6FFFA,stroke:#0F766E,color:#134E4A,stroke-width:1.2px,rx:10,ry:10
+    classDef fuse    fill:#E7F6E7,stroke:#2F855A,color:#1C4532,stroke-width:1.2px,rx:10,ry:10
+    classDef down    fill:#F1F5F9,stroke:#334155,color:#0F172A,stroke-width:1.2px,rx:10,ry:10
