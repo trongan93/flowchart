@@ -1,0 +1,49 @@
+%%{init: { "flowchart": { "rankSpacing": 70, "nodeSpacing": 45 } }}%%
+flowchart TB
+
+%% ================== Satellite (Compression) — ROW 1, forced LR ==================
+subgraph SAT["🛰️ Satellite (Compression)"]
+direction LR
+    X((Satellite Image x)):::img --> C1["Conv(5,2)"] --> S1["STB"] --> C2["Conv(3,2)"] --> S2["STB"] --> C3["Conv(3,2)"] --> S3["STB"] --> C4["Conv(3,2)"] --> Y((y)):::latent
+
+    %% hyper-encoder inline (still in the same LR row)
+    Y --> HC1["Conv(3,1)"] --> HS1["STB"] --> HC2["Conv(3,2)"] --> HS2["STB"] --> HC3["Conv(3,2)"] --> HS3["STB"] --> HC4["Conv(3,2)"] --> Z((z)):::latent
+
+    %% quantize + AE (still LR)
+    Y --> Qy[/Q/]:::op --> YH((ŷ)):::latent --> AEy([AE])
+    Z --> Qz[/Q/]:::op --> ZH((ẑ)):::latent --> AEz([AE])
+
+    AEy --> BITS[/Compressed Data/]
+    AEz --> BITS
+end
+
+%% ======= vertical drop in the middle =======
+BITS --> LINK["⬇️ Transmission Channel"]:::link
+
+%% ================== Ground (Decompression) — ROW 2, forced LR ==================
+subgraph GS["🌍 Ground Station (Decompression)"]
+direction LR
+    LINK --> ADy([AD]) --> YH2((ŷ)):::latent
+    LINK --> ADz([AD]) --> ZH2((ẑ)):::latent
+
+    %% hyper-decoder inline (LR)
+    ZH2 --> T1["Tconv(3,1)"] --> TS1["STB"] --> T2["Tconv(3,2)"] --> TS2["STB"] --> T3["Tconv(3,2)"] --> TS3["STB"] --> T4["Tconv(3,2)"] --> SIDE((side info)):::out
+
+    %% main decoder inline (LR)
+    YH2 --> U1["Tconv(5,2)"] --> US1["STB"] --> U2["Tconv(3,2)"] --> US2["STB"] --> U3["Tconv(3,2)"] --> US3["STB"] --> U4["Tconv(3,2)"] --> XH((Reconstructed x̂)):::img
+end
+
+%% ===== Context model (dashed links) =====
+CAM[[Context & Probability Model]]:::cam
+ADy -.-> CAM
+ADz -.-> CAM
+CAM -. "params" .-> SIDE
+CAM -. "params" .-> XH
+
+%% ===== Styles =====
+classDef img fill:#E3F2FD,stroke:#1565C0,stroke-width:1.5px;
+classDef latent fill:#E8F0FE,stroke:#5C6BC0,stroke-width:1px;
+classDef op fill:#FFF3E0,stroke:#EF6C00,stroke-width:1.2px;
+classDef cam fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.2px;
+classDef link fill:#FFF9C4,stroke:#FBC02D,stroke-width:1.2px;
+classDef out fill:#E1F5FE,stroke:#0288D1,stroke-width:1px;
