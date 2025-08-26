@@ -1,0 +1,106 @@
+flowchart TD
+  A0((Start)) --> A1[Input scenes\nSAR image + Optical image]
+
+  %% ----------------------
+  %% DATA SOURCES / SPACECRAFT SUBSYSTEMS
+  %% ----------------------
+  subgraph S[Spacecraft and Ground Data Sources]
+    direction TB
+    S1[GNSS or GPS receivers\nPseudorange and carrier phase]
+    S2[Ground tracking and POD\nSLR • Doppler • VLBI • precise ephemerides]
+    S3[ADCS sensors\nStar trackers • Sun sensors • Magnetometers • Gyros or IMU]
+    S4[Onboard clock and PPS\nGPS time or UTC sync]
+    S5[Earth orientation parameters\nPrecession • Nutation • Polar motion]
+    S6[Geodetic reference\nWGS84 ellipsoid • Geoid such as EGM96]
+    S7[DEM or DSM\nSRTM • Copernicus]
+    S8[Atmospheric models optional\nTroposphere • Ionosphere]
+    S9[SAR instrument metadata\nPRF • pulse timing • slant range • antenna geometry • Doppler centroid]
+    S10[Optical camera metadata\nFocal length • principal point • line timing or TDI • distortions]
+  end
+
+  %% ----------------------
+  %% METADATA GENERATION
+  %% ----------------------
+  subgraph M1[Common Navigation and Attitude Solution]
+    direction TB
+    M1a[Orbit determination\nFuse GNSS plus POD to get state vectors r v of t]
+    M1b[Attitude determination\nFuse star tracker and gyro via EKF to get quaternions q of t]
+    M1c[Time synchronization\nAlign sensor timestamps to GPS or UTC via PPS]
+    M1d[Reference frames\nApply EOP and geodetic models]
+    M1a --- S1
+    M1a --- S2
+    M1b --- S3
+    M1c --- S4
+    M1d --- S5
+    M1d --- S6
+  end
+
+  subgraph M2[SAR metadata packaging]
+    direction TB
+    M2a[Range Doppler sensor model\nUse r v t • q t • PRF • timing • Doppler]
+    M2b[Zero Doppler time mapping and slant range model]
+    M2c[Optional atmospheric delay corrections]
+    M2a --- S9
+    M2c --- S8
+  end
+
+  subgraph M3[Optical metadata packaging]
+    direction TB
+    M3a[Camera model\nInterior orientation and distortions and line timing or TDI]
+    M3b[Exterior orientation from r v t and q t]
+    M3c[RPC generation or physical collinearity model]
+    M3a --- S10
+  end
+
+  A1 --> M1
+  M1 --> M2
+  M1 --> M3
+
+  %% ----------------------
+  %% COARSE CO-REGISTRATION
+  %% ----------------------
+  subgraph C[Coarse co-registration metadata based]
+    direction TB
+    C1[Propagate orbit and attitude to imaging time grid]
+    C2[Sensor to ground ray tracing\nIntersect line of sight with DEM or ellipsoid]
+    C3[Orthorectify each modality into a common map frame]
+    C4[Output Coarse\nGlobally consistent alignment\nOverlaps within a few pixels]
+    C2 --- S7
+    C2 --- M1d
+  end
+
+  M2 --> C1
+  M3 --> C1
+  C1 --> C2 --> C3 --> C4
+
+  %% ----------------------
+  %% FINE CO-REGISTRATION
+  %% ----------------------
+  subgraph F[Fine co-registration image driven]
+    direction TB
+    F0[Residual offsets remain\nEphemeris • parallax • timing]
+    F1[Preprocess\nRadiometric normalization • SAR speckle reduction • Cloud mask for optical]
+    F2[Feature or keypoint extraction\nCorners • edges • grid points • dense patches]
+    F3[Cross modality similarity metrics\nNGF • Mutual Information • Census or Rank • Phase congruency • ZNCC on gradients]
+    F4[Matching and outlier rejection\nRatio test and RANSAC or LMedS]
+    F5[Estimate transform\nRPC bias or affine or projective or polynomial or local spline\nOptional bundle adjustment]
+    F6[Parallax compensation with DEM\nRetrace rays using refined model]
+    F7[Warp and resample to map grid\nOptical cubic • SAR nearest or sinc]
+    F8[Output Fine\nSub pixel registration\nCritical near cloud boundaries]
+    F0 --> F1 --> F2 --> F3 --> F4 --> F5 --> F6 --> F7 --> F8
+    F6 --- S7
+  end
+
+  C4 --> F0
+
+  %% ----------------------
+  %% QUALITY CONTROL
+  %% ----------------------
+  subgraph Q[Quality control and Deliverables]
+    direction TB
+    Q1[Evaluate residuals on tie points\nRMSE • CE90 or LE90 • map checks]
+    Q2[Visual checks\nEdge overlays • checkerboard flicker test]
+    Q3[Deliverables\nRegistered SAR and Optical orthos • refined RPC or RD metadata • tie points • QA report]
+  end
+
+  F8 --> Q1 --> Q2 --> Q3
